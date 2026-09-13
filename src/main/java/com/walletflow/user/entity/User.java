@@ -21,10 +21,10 @@ import org.hibernate.annotations.SQLDelete;
 @SQLDelete(sql = "UPDATE users SET deleted = 1, deleted_at = NOW() WHERE id = ?")
 public class User extends SoftDeletableEntity {
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column
     private String password;
 
     @Column(nullable = false, length = 50)
@@ -36,8 +36,9 @@ public class User extends SoftDeletableEntity {
     @Column(nullable = false, length = 16)
     private String phoneNumber;
 
+    @Builder.Default
     @Column(nullable = false)
-    private boolean emailVerified;
+    private boolean emailVerified = false;
 
     @Builder.Default
     @Column(nullable = false)
