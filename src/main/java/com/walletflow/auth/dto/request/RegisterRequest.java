@@ -1,4 +1,4 @@
-package com.walletflow.user.dto;
+package com.walletflow.auth.dto.request;
 
 import com.walletflow.common.validation.InternationalPhone;
 import com.walletflow.common.validation.PersonName;

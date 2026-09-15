@@ -1,0 +1,33 @@
+package com.walletflow.auth.service;
+
+import com.walletflow.auth.dto.request.RegisterRequest;
+import com.walletflow.auth.verificationtoken.service.VerificationTokenService;
+import com.walletflow.user.entity.Role;
+import com.walletflow.user.entity.User;
+import com.walletflow.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final VerificationTokenService tokenService;
+
+    public void userRegister(RegisterRequest request){
+        if(userRepository.existsByEmail(request.email())){
+            throw new RuntimeException("Bu e-posta adresi zaten kullanımda!");
+        }
+
+        User user = User.builder()
+                .email(request.email())
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .phoneNumber(request.phoneNumber())
+                .role(Role.USER)
+                .build();
+        userRepository.save(user);
+        tokenService.generateTokenAndSendEmail(user);
+    }
+}
