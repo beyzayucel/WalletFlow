@@ -1,4 +1,4 @@
-package com.walletflow.auth.controller;
+package com.walletflow.common.controller;
 
 import com.walletflow.common.response.ApiStandardResponse;
 import org.springframework.http.HttpStatus;
