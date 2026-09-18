@@ -60,8 +60,7 @@ public record ErrorDetail(
         }
 
         public ErrorDetail build() {
-            return new ErrorDetail(status, code, message, path,
-                    Instant.now(), fieldErrors, requestId, remainingTime, remainingAttempts);
+            return new ErrorDetail(status, code, message, path, Instant.now(), fieldErrors, requestId, remainingTime, remainingAttempts);
         }
     }
 }

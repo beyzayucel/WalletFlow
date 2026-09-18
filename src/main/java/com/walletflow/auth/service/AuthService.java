@@ -1,6 +1,7 @@
 package com.walletflow.auth.service;
 
 import com.walletflow.auth.dto.request.RegisterRequest;
+import com.walletflow.auth.exception.EmailAlreadyExistsException;
 import com.walletflow.auth.verificationtoken.service.VerificationTokenService;
 import com.walletflow.user.entity.Role;
 import com.walletflow.user.entity.User;
@@ -17,7 +18,7 @@ public class AuthService {
 
     public void userRegister(RegisterRequest request){
         if(userRepository.existsByEmail(request.email())){
-            throw new RuntimeException("Bu e-posta adresi zaten kullanımda!");
+            throw new EmailAlreadyExistsException();
         }
 
         User user = User.builder()
