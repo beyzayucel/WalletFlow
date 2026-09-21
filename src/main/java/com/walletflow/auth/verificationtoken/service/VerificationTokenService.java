@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -41,11 +42,16 @@ public class VerificationTokenService {
         log.info("📧 Mail Gönderildi: Kullanıcı: {}, Link: {}", user.getEmail(), verificationTokenUrl);
     }
 
+    @Transactional
     public boolean isVerifyToken(String token) {
         String hash = SecurityUtils.hashToken(token);
-        return tokenRepository.findByToken(hash)
-                .map(VerificationToken::isValid)
-                .orElse(false);
+        Optional<VerificationToken> optToken =tokenRepository.findByToken(hash);
+
+        if(optToken.isPresent() && optToken.get().isValid()){
+            optToken.get().getUser().setEmailVerified(true);
+            return true;
+        }
+        return false;
     }
 
     @Transactional
@@ -66,7 +72,6 @@ public class VerificationTokenService {
 
     private void activateUser(User user, String rawPassword) {
         user.setPassword(passwordEncoder.encode(rawPassword));
-        user.setEmailVerified(true);
         user.setEnabled(true);
     }
 
