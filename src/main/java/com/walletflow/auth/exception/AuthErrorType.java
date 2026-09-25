@@ -9,7 +9,10 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum AuthErrorType implements BaseErrorType {
 
-    EMAIL_ALREADY_EXISTS("error.email.already.exists", HttpStatus.CONFLICT);
+    EMAIL_ALREADY_EXISTS("error.email.already.exists", HttpStatus.CONFLICT),
+    USER_NOT_FOUND("error.user.not.found", HttpStatus.NOT_FOUND),
+    INVALID_PASSWORD("error.invalid.password", HttpStatus.UNAUTHORIZED);
+
 
     private final String messageKey;
     private final HttpStatus httpStatus;
