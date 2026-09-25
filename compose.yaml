@@ -1,10 +1,46 @@
+name: walletflow
+
 services:
   mysql:
     image: 'mysql:latest'
+    container_name: walletflow-mysql
+    labels:
+      org.springframework.boot.ignore: "true"
+    networks:
+      - walletflow-net
     environment:
-      - 'MYSQL_DATABASE=mydatabase'
-      - 'MYSQL_PASSWORD=secret'
-      - 'MYSQL_ROOT_PASSWORD=verysecret'
-      - 'MYSQL_USER=myuser'
+      MYSQL_DATABASE: ${DB_NAME:-walletflow}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     ports:
-      - '3306'
+      - '${DB_PORT:-3306}:3306'
+    volumes:
+      - walletflow-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: 'redis:7-alpine'
+    container_name: walletflow-redis
+    networks:
+      - walletflow-net
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - walletflow-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  walletflow-net:
+    driver: bridge
+
+volumes:
+  walletflow-mysql-data:
+  walletflow-redis-data:

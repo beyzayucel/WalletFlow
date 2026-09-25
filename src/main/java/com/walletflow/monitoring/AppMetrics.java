@@ -6,14 +6,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 @Component
 public class AppMetrics {
 
-    private final Counter loginSuccess;
-    private final Counter loginFailure;
-    private final Counter otpSend;
-    private final Counter otpVerifySuccess;
-    private final Counter otpVerifyFailure;
-    private final Counter passwordResetRequest;
-    private final Counter tokenRefresh;
-    private final Counter accountLocked;
+    private final Counter loginSuccess;//basarılı login sayısı
+    private final Counter loginFailure;//basarısız login sayısı
+    private final Counter otpSend;//kaç kere otp gönderilmiş
+    private final Counter otpVerifySuccess;//kaç kez doğru otp girilmiş
+    private final Counter otpVerifyFailure;//kaç kez yanlış otp girilmiş
+    private final Counter passwordResetRequest;//kaç kez şifremi unuttum isteği gelmiş
+    private final Counter tokenRefresh;//bir tokenin kaç kere yenilendiği
+    private final Counter accountLocked;//hesap kaç kere kilitlendi
 
     public AppMetrics(MeterRegistry registry) {
         this.loginSuccess = Counter.builder("auth.login.success")
