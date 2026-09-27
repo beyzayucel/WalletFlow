@@ -3,7 +3,7 @@ package com.walletflow.auth.verificationtoken.service;
 import com.walletflow.auth.verificationtoken.dto.request.PasswordRequest;
 import com.walletflow.auth.verificationtoken.entity.VerificationToken;
 import com.walletflow.auth.verificationtoken.repository.VerificationTokenRepository;
-import com.walletflow.auth.verificationtoken.utils.SecurityUtils;
+import com.walletflow.auth.verificationtoken.utils.HashUtils;
 import com.walletflow.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class VerificationTokenService {
 
     public void generateTokenAndSendEmail(User user) {
         String token = UUID.randomUUID().toString();
-        String hash = SecurityUtils.hashToken(token);
+        String hash = HashUtils.hash(token);
         VerificationToken verificationToken = VerificationToken.builder()
                 .user(user)
                 .token(hash)
@@ -44,7 +44,7 @@ public class VerificationTokenService {
 
     @Transactional
     public boolean isVerifyToken(String token) {
-        String hash = SecurityUtils.hashToken(token);
+        String hash = HashUtils.hash(token);
         Optional<VerificationToken> optToken =tokenRepository.findByToken(hash);
 
         if(optToken.isPresent() && optToken.get().isValid()){
@@ -62,7 +62,7 @@ public class VerificationTokenService {
     }
 
     private VerificationToken getValidToken(String rawToken) {
-        String hash = SecurityUtils.hashToken(rawToken);
+        String hash = HashUtils.hash(rawToken);
         VerificationToken token = tokenRepository.findByToken(hash).orElseThrow(() -> new RuntimeException("Geçersiz token!"));
         if (!token.isValid()) {
             throw new RuntimeException("Bağlantının süresi dolmuş veya zaten kullanılmış!");
