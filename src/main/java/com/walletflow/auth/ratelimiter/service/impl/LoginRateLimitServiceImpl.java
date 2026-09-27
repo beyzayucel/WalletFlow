@@ -33,4 +33,10 @@ public class LoginRateLimitServiceImpl implements LoginRateLimitService {
 
         return false;
     }
+
+    private void initializeExpirationIfNeeded(String attemptKey, Long attempts){
+        if (attempts == 1L){
+//            redisTemplate.expire(attemptKey, loginRateLimitProperties.getDuration());
+        }
+    }
 }
