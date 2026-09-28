@@ -3,25 +3,32 @@ package com.walletflow.auth.service.impl;
 import com.walletflow.auth.dto.request.LoginRequest;
 import com.walletflow.auth.dto.request.RegisterRequest;
 import com.walletflow.auth.dto.response.LoginResponse;
+import com.walletflow.auth.exception.AuthErrorType;
 import com.walletflow.auth.exception.AuthException;
-import com.walletflow.auth.exception.EmailAlreadyExistsException;
 import com.walletflow.auth.exception.LoginLimitException;
+import com.walletflow.auth.exception.UserException;
 import com.walletflow.auth.ratelimiter.config.LoginRateLimitProperties;
 import com.walletflow.auth.service.AuthService;
 import com.walletflow.auth.ratelimiter.service.LoginRateLimitService;
-import com.walletflow.auth.verificationtoken.service.VerificationTokenService;
+import com.walletflow.auth.service.TokenService;
 import com.walletflow.monitoring.AppMetrics;
 import com.walletflow.user.entity.Role;
 import com.walletflow.user.entity.User;
+import com.walletflow.user.exception.UserErrorType;
 import com.walletflow.user.repository.UserRepository;
 import com.walletflow.user.service.UserService;
+import com.walletflow.user.utils.EmailNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +36,7 @@ import org.springframework.stereotype.Service;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final VerificationTokenService tokenService;
+    private final TokenService tokenService;
     private final AuthenticationManager authenticationManager;
     private final AppMetrics appMetrics;
     private final LoginRateLimitService loginRateLimitService;
@@ -38,20 +45,20 @@ public class AuthServiceImpl implements AuthService {
 
 
     @Override
+    @Transactional
     public void userRegister(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new EmailAlreadyExistsException();
-        }
+        checkDuplicateUser(EmailNormalizer.normalize(request.email()), request.phoneNumber());
 
         User user = User.builder()
-                .email(request.email())
+                .email(EmailNormalizer.normalize(request.email()))
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .phoneNumber(request.phoneNumber())
                 .role(Role.USER)
                 .build();
+
         userRepository.save(user);
-        tokenService.generateTokenAndSendEmail(user);
+        tokenService.generateToken(user);
     }
 
     @Override
@@ -60,7 +67,7 @@ public class AuthServiceImpl implements AuthService {
         User user = authenticateUser(loginRequest);
         if (!user.isEmailVerified()) {
             log.warn("Login rejected, email not verified: email={}", user.getEmail());
-            throw new AuthException();
+            throw new AuthException(AuthErrorType.EMAIL_NOT_VERIFIED);
         }
 
         if (user.isFirstLogin()) {
@@ -75,7 +82,8 @@ public class AuthServiceImpl implements AuthService {
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
-        } catch (AuthenticationException exception) {
+        }
+        catch (AuthenticationException exception) {
             appMetrics.incrementLoginFailure();
             boolean blocked = loginRateLimitService.incrementFailedAttempts(request.email());
             if (blocked) {
@@ -85,27 +93,46 @@ public class AuthServiceImpl implements AuthService {
             }
             throw exception;
         }
-        return null;
+
+        if (!(authentication.getPrincipal() instanceof UserDetails userDetails)) {
+            appMetrics.incrementLoginFailure();
+
+            loginRateLimitService.incrementFailedAttempts(request.email());
+            throw new AuthException(AuthErrorType.INVALID_CREDENTIALS);
+        }
+
+        return userService.findByEmail(userDetails.getUsername());
     }
 
     private void sendAccountLockedNotification(String email) {
         try {
             User user = userService.findByEmail(email);
             long blockMinutes = loginRateLimitProperties.getBlockDuration().toMinutes();
-//            String resetUrl = passwordResetTokenService.createResetUrl(user);
-//
-//            Map<String, String> params = Map.of(
-//                    "firstName", user.getFirstName(),
-//                    "maxAttempts", String.valueOf(loginRateLimitProperties.getMaxAttempts()),
-//                    "blockMinutes", String.valueOf(blockMinutes),
-//                    "resetUrl", resetUrl
-//            );
-//
-//            notificationService.notify(NotificationType.ACCOUNT_LOCKED_EMAIL, user.getEmail(), params);
+            String resetUrl = tokenService.generateToken(user);
 
-//            log.info("Account locked notification sent: email={}", MaskType.EMAIL.mask(user.getEmail()));
+            Map<String, String> params = Map.of(
+                    "firstName", user.getFirstName(),
+                    "maxAttempts", String.valueOf(loginRateLimitProperties.getMaxAttempts()),
+                    "blockMinutes", String.valueOf(blockMinutes),
+                    "resetUrl", resetUrl
+            );
+
+            //     notificationService.notify(NotificationType.ACCOUNT_LOCKED_EMAIL, user.getEmail(), params);
+
+            log.info("Account locked notification sent: email={}, params={}", user.getEmail(), params);
         } catch (Exception e) {
             log.warn("Failed to send account locked notification for identifier: {}", email);
+        }
+    }
+
+    private void checkDuplicateUser(String email, String phoneNumber) {
+        if (userRepository.existsByEmail(email)) {
+            log.info("User creation rejected: event=EMAIL_ALREADY_EXISTS, email={}", email);
+            throw new UserException(UserErrorType.EMAIL_ALREADY_EXISTS);
+        }
+        if (userRepository.existsByPhoneNumber(phoneNumber)) {
+            log.info("User creation rejected: event=PHONE_ALREADY_EXISTS, phone={}", phoneNumber);
+            throw new UserException(UserErrorType.PHONE_ALREADY_EXISTS);
         }
     }
 

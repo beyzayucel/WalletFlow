@@ -1,4 +1,4 @@
-package com.walletflow.user.exception;
+package com.walletflow.auth.verificationtoken.exception;
 
 import com.walletflow.common.exception.BaseErrorType;
 import lombok.Getter;
@@ -7,15 +7,12 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum UserErrorType implements BaseErrorType {
+public enum VerificationTokenErrorType implements BaseErrorType {
 
-    USER_NOT_FOUND("error.user.not.found", HttpStatus.NOT_FOUND),
-    EMAIL_ALREADY_EXISTS("error.email.already.exists", HttpStatus.CONFLICT),
-    PHONE_ALREADY_EXISTS("error.phone.already.exists", HttpStatus.CONFLICT);
+    INVALID_TOKEN("error.verification.token.invalid", HttpStatus.BAD_REQUEST);
 
     private final String messageKey;
     private final HttpStatus httpStatus;
-
 
     @Override
     public String getCode() {

@@ -40,7 +40,12 @@ app:
       block-duration: ${LOGIN_RATE_LIMIT_BLOCK_DURATION}
       max-attempts: ${LOGIN_RATE_LIMIT_MAX_ATTEMPTS}
       duration: ${LOGIN_RATE_LIMIT_DURATION}
-    password-reset:
-      max-requests-per-email: ${PASSWORD_RESET_RATE_LIMIT_MAX_PER_EMAIL}
-      duration: ${PASSWORD_RESET_RATE_LIMIT_DURATION}
-      cooldown-duration: ${PASSWORD_RESET_COOLDOWN_DURATION}
+
+
+  password-reset:
+    url: ${PASSWORD_RESET_BASE_URL}
+    expire-duration: ${PASSWORD_RESET_EXPIRE_DURATION}
+
+  verification-token:
+    url: ${VERIFICATION_TOKEN_BASE_URL}
+    exprire-duration: ${VERIFICATION_TOKEN_EXPIRE_DURATION}
