@@ -18,6 +18,9 @@ public class BaseException extends RuntimeException {
         this.errorType = errorType;
     }
 
+    public BaseException() {
+    }
+
     public HttpStatus getStatus() {
         return errorType.getHttpStatus();
     }

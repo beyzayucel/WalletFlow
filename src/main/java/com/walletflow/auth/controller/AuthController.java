@@ -1,9 +1,7 @@
 package com.walletflow.auth.controller;
 
 import com.walletflow.auth.controller.api.AuthApi;
-import com.walletflow.auth.dto.request.LoginRequest;
 import com.walletflow.auth.dto.request.RegisterRequest;
-import com.walletflow.auth.dto.response.LoginResponse;
 import com.walletflow.auth.service.AuthService;
 import com.walletflow.auth.verificationtoken.dto.request.PasswordRequest;
 import com.walletflow.auth.verificationtoken.service.VerificationTokenService;
@@ -28,7 +26,7 @@ public class AuthController extends BaseController implements AuthApi {
 
     @Override
     public ResponseEntity<ApiStandardResponse<Boolean>> verifyToken(String token) {
-        boolean isValid = tokenService.isVerifyToken(token);
+        boolean isValid = tokenService.validateToken(token);
         return ok(isValid);
     }
 

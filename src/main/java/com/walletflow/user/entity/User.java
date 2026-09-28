@@ -16,7 +16,8 @@ import org.hibernate.annotations.SQLDelete;
 @NoArgsConstructor
 @SuperBuilder
 @Table(name = "users", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_users_email", columnNames = "email")
+        @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
+        @UniqueConstraint(name = "uk_users_phone_number", columnNames = "phoneNumber")
 })
 @SQLDelete(sql = "UPDATE users SET deleted = 1, deleted_at = NOW() WHERE id = ?")
 public class User extends SoftDeletableEntity {
