@@ -4,4 +4,5 @@ import com.walletflow.user.entity.User;
 
 public interface UserService {
     User findByEmail(String email);
+    void updateLastLogin(User user);
 }

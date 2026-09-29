@@ -52,12 +52,13 @@ public class LoginRateLimitServiceImpl implements LoginRateLimitService {
         return false;
     }
 
-    private void resetAttemptsByHash(String hashMail) {
-        String key = rateLimitKeyGenerator.createAttemptKey(hashMail);
+    public void resetAttemptsByHash(String email) {
+        String hashEmail = HashUtils.hash(email);
+        String key = rateLimitKeyGenerator.createAttemptKey(hashEmail);
 
         Optional.ofNullable(redisTemplate.delete(key))
                 .filter(Boolean::booleanValue)
-                .ifPresent(ignored -> log.debug("Reset login attempts for user: {}", hashMail));
+                .ifPresent(ignored -> log.debug("Reset login attempts for user: {}", hashEmail));
 
 //        aslında üstteki kısmın yaptığı şey:
 //

@@ -9,6 +9,8 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLDelete;
 
+import java.time.Instant;
+
 
 @Getter
 @Setter
@@ -53,4 +55,7 @@ public class User extends SoftDeletableEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role = Role.USER;
+
+    private Instant lastLoginAt;
+
 }

@@ -15,24 +15,24 @@ public class OtpServiceImpl implements OtpService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     public void generateOtp(String email) {
-        validateEmailInput(email);
-        log.info("OTP generation request received: email={}", MaskType.EMAIL.mask(email));
+//        validateEmailInput(email);
+//        log.info("OTP generation request received: email={}", MaskType.EMAIL.mask(email));
+//
+//        checkCooldown(email);
+//        clearAllOtpKeys(email);
+//
+//        String otpCode = generateOtpCode();
+//        saveOtpToRedis(email, otpCode);
+//
+//        try {
+//            sendOtpNotification(email, otpCode);
+//        } catch (NotificationPublishException e) {
+//            log.error("Failed to send OTP notification: email={}", MaskType.EMAIL.mask(email));
+//            invalidateOtp(email);
+//            throw new OtpException(OtpErrorType.OTP_SEND_FAILED, e);
+//        }
 
-        checkCooldown(email);
-        clearAllOtpKeys(email);
-
-        String otpCode = generateOtpCode();
-        saveOtpToRedis(email, otpCode);
-
-        try {
-            sendOtpNotification(email, otpCode);
-        } catch (NotificationPublishException e) {
-            log.error("Failed to send OTP notification: email={}", MaskType.EMAIL.mask(email));
-            invalidateOtp(email);
-            throw new OtpException(OtpErrorType.OTP_SEND_FAILED, e);
-        }
-
-        log.info("OTP generated and dispatched: email={}", MaskType.EMAIL.mask(email));
+//        log.info("OTP generated and dispatched: email={}", MaskType.EMAIL.mask(email));
     }
 
     @Override
