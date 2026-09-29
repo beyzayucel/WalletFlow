@@ -12,6 +12,7 @@ import com.walletflow.auth.service.AuthService;
 import com.walletflow.auth.ratelimiter.service.LoginRateLimitService;
 import com.walletflow.auth.service.TokenService;
 import com.walletflow.monitoring.AppMetrics;
+import com.walletflow.security.service.JwtService;
 import com.walletflow.user.entity.Role;
 import com.walletflow.user.entity.User;
 import com.walletflow.user.exception.UserErrorType;
@@ -25,6 +26,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +44,8 @@ public class AuthServiceImpl implements AuthService {
     private final LoginRateLimitService loginRateLimitService;
     private final UserService userService;
     private final LoginRateLimitProperties loginRateLimitProperties;
+    private final UserDetailsService userDetailsService;
+    private final JwtService jwtService;
 
 
     @Override
@@ -63,19 +67,28 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
-
         User user = authenticateUser(loginRequest);
+        loginRateLimitService.resetAttemptsByHash(loginRequest.email());
+
         if (!user.isEmailVerified()) {
             log.warn("Login rejected, email not verified: email={}", user.getEmail());
             throw new AuthException(AuthErrorType.EMAIL_NOT_VERIFIED);
         }
+        userService.updateLastLogin(user);
 
         if (user.isFirstLogin()) {
-            //jwt üret ve doğrudan giriş yap
+            appMetrics.incrementLoginSuccess();
+            log.info("First login, OTP bypassed: event=USER_FIRST_LOGIN, email={}", user.getEmail());
+
+//            auditLogService.createAuditLogForSelf(AuditActionType.LOGIN_SUCCESS, user);
+            return authenticateAndGenerateTokens(user);
         }
 
+//        otpService.generateOtp(user.getEmail(), user.getFirstName());
+        appMetrics.incrementOtpSend();
+        log.info("OTP sent for 2FA: event=OTP_REQUIRED, email={}", user.getEmail());
 
-        return null;
+        return new LoginResponse.OtpRequired("OTP code sent to your email address.");
     }
 
     private User authenticateUser(LoginRequest request) {
@@ -135,5 +148,14 @@ public class AuthServiceImpl implements AuthService {
             throw new UserException(UserErrorType.PHONE_ALREADY_EXISTS);
         }
     }
+
+
+    private LoginResponse.Authenticated authenticateAndGenerateTokens(User user) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        String accessToken = jwtService.generateAccessToken(userDetails, user.isFirstLogin());
+
+
+    }
+
 
 }

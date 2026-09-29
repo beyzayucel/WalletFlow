@@ -7,6 +7,9 @@ import com.walletflow.user.service.UserService;
 import com.walletflow.user.utils.EmailNormalizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 
 
 @Service
@@ -20,4 +23,12 @@ public class UserServiceImpl implements UserService {
         String normalize = EmailNormalizer.normalize(email);
         return userRepository.findByEmail(normalize).orElseThrow(UserNotFoundException::new);
     }
+
+    @Override
+    @Transactional
+    public void updateLastLogin(User user) {
+        user.setLastLoginAt(Instant.now());
+        userRepository.save(user);
+    }
+
 }
