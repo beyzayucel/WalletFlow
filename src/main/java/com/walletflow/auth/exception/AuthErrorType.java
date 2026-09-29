@@ -13,7 +13,8 @@ public enum AuthErrorType implements BaseErrorType {
     EMAIL_ALREADY_EXISTS("error.email.already.exists", HttpStatus.CONFLICT),
     INVALID_PASSWORD("error.invalid.password", HttpStatus.UNAUTHORIZED),
     EMAIL_NOT_VERIFIED("error.email.not.verified", HttpStatus.FORBIDDEN),
-    ACCOUNT_LOCKED("error.account.locked", HttpStatus.TOO_MANY_REQUESTS);
+    ACCOUNT_LOCKED("error.account.locked", HttpStatus.TOO_MANY_REQUESTS),
+    TOKEN_REUSE_DETECTED("error.token.reuse.detected", HttpStatus.UNAUTHORIZED);
 
     private final String messageKey;
     private final HttpStatus httpStatus;

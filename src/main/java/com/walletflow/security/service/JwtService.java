@@ -1,4 +1,5 @@
 package com.walletflow.security.service;
+
 import com.walletflow.security.config.JwtProperties;
 import com.walletflow.security.exception.JwtErrorType;
 import com.walletflow.security.exception.JwtTokenException;
@@ -40,6 +41,19 @@ public class JwtService {
         return null;
     }
 
+    public String generateRefreshToken(UserDetails userDetails, String tokenId) {
+            long expirationMillis = jwtProperties.getRefreshTokenExpiry().toMillis();
+
+            return Jwts.builder()
+                    .subject(userDetails.getUsername())
+                    .id(tokenId)
+                    .issuedAt(new Date())
+                    .expiration(new Date(System.currentTimeMillis() + expirationMillis))
+                    .signWith(getSigningKey(), Jwts.SIG.HS256)
+                    .compact();
+
+    }
+
     public String generateAccessToken(UserDetails userDetails, boolean firstLogin) {
         var roles = userDetails.getAuthorities()
                 .stream()
@@ -63,6 +77,10 @@ public class JwtService {
 
     public String getUsernameFromToken(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractTokenId(String token) {
+        return extractClaim(token, Claims::getId);
     }
 
     public Instant getIssuedAtFromToken(String token) {
