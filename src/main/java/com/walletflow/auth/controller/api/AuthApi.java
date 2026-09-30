@@ -1,6 +1,9 @@
 package com.walletflow.auth.controller.api;
 
+import com.walletflow.auth.dto.request.LoginRequest;
 import com.walletflow.auth.dto.request.RegisterRequest;
+import com.walletflow.auth.dto.response.LoginResponse;
+import com.walletflow.auth.refreshtoken.dto.RefreshTokenRequest;
 import com.walletflow.auth.verificationtoken.dto.request.PasswordRequest;
 import com.walletflow.common.constants.ApiEndpoints;
 import com.walletflow.common.response.ApiStandardResponse;
@@ -43,4 +46,17 @@ public interface AuthApi {
     })
     @PostMapping(ApiEndpoints.Auth.SET_PASSWORD)
     ResponseEntity<ApiStandardResponse<Void>> setPassword(@Valid @RequestBody PasswordRequest passwordRequest);
+
+    @Operation(summary = "Kullanıcı girişi", description = "Email ve şifre ile giriş yapar. İlk giriş ise tokenları döner, değilse 2FA OTP tetikler.")
+    @PostMapping(ApiEndpoints.Auth.LOGIN)
+    ResponseEntity<ApiStandardResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest);
+
+    @Operation(summary = "Token yenileme (Rotation)", description = "Süresi biten Access Token yerine Refresh Token ile yeni token ikilisi üretir.")
+    @PostMapping(ApiEndpoints.Auth.REFRESH)
+    ResponseEntity<ApiStandardResponse<LoginResponse>> refresh(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest);
+
+    @Operation(summary = "Çıkış yapma (Logout)", description = "Cihaza ait Refresh Token'ı Redis'ten silerek oturumu kapatır.")
+    @PostMapping(ApiEndpoints.Auth.LOGOUT)
+    ResponseEntity<ApiStandardResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest);
+
 }

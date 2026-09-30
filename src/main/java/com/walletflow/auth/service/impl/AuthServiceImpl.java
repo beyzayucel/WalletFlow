@@ -8,10 +8,13 @@ import com.walletflow.auth.exception.AuthException;
 import com.walletflow.auth.exception.LoginLimitException;
 import com.walletflow.auth.exception.UserException;
 import com.walletflow.auth.ratelimiter.config.LoginRateLimitProperties;
+import com.walletflow.auth.refreshtoken.dto.RefreshTokenRequest;
+import com.walletflow.auth.refreshtoken.service.RefreshTokenService;
 import com.walletflow.auth.service.AuthService;
 import com.walletflow.auth.ratelimiter.service.LoginRateLimitService;
 import com.walletflow.auth.service.TokenService;
 import com.walletflow.monitoring.AppMetrics;
+import com.walletflow.security.config.JwtProperties;
 import com.walletflow.security.service.JwtService;
 import com.walletflow.user.entity.Role;
 import com.walletflow.user.entity.User;
@@ -31,6 +34,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +51,8 @@ public class AuthServiceImpl implements AuthService {
     private final LoginRateLimitProperties loginRateLimitProperties;
     private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
+    private final JwtProperties jwtProperties;
 
 
     @Override
@@ -95,8 +102,7 @@ public class AuthServiceImpl implements AuthService {
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
-        }
-        catch (AuthenticationException exception) {
+        } catch (AuthenticationException exception) {
             appMetrics.incrementLoginFailure();
             boolean blocked = loginRateLimitService.incrementFailedAttempts(request.email());
             if (blocked) {
@@ -152,9 +158,56 @@ public class AuthServiceImpl implements AuthService {
 
     private LoginResponse.Authenticated authenticateAndGenerateTokens(User user) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        String tokenId = UUID.randomUUID().toString();
         String accessToken = jwtService.generateAccessToken(userDetails, user.isFirstLogin());
+        String refreshToken = jwtService.generateRefreshToken(userDetails, tokenId);
+        refreshTokenService.save(user.getEmail(), tokenId);
+        long expiresIn = jwtProperties.getAccessTokenExpiry().toSeconds();
+
+        return new LoginResponse.Authenticated(accessToken, refreshToken, expiresIn, user.isFirstLogin());
+    }
+
+    @Override
+    public LoginResponse.Authenticated refreshToken(RefreshTokenRequest refreshTokenRequest) {
+        String token = refreshTokenRequest.refreshToken();
+
+        if (!jwtService.isTokenValid(token)) {
+            throw new AuthException(AuthErrorType.INVALID_CREDENTIALS);
+        }
+
+        String email = jwtService.getUsernameFromToken(token);
+        String oldTokenId = jwtService.extractTokenId(token);
+
+        if (oldTokenId == null) {
+            throw new AuthException(AuthErrorType.INVALID_CREDENTIALS);
+        }
+
+        String newTokenId = UUID.randomUUID().toString();
+        refreshTokenService.rotate(email, oldTokenId, newTokenId);
 
 
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        String newAccessToken = jwtService.generateAccessToken(userDetails, userService.findByEmail(email).isFirstLogin());
+        String newRefreshToken = jwtService.generateRefreshToken(userDetails, newTokenId);
+        long expiresIn = jwtProperties.getAccessTokenExpiry().toSeconds();
+
+        return new LoginResponse.Authenticated(newAccessToken, newRefreshToken, expiresIn, userService.findByEmail(email).isFirstLogin());
+
+    }
+
+    @Override
+    public void logout(RefreshTokenRequest request) {
+        String token = request.refreshToken();
+
+        if (jwtService.isTokenValid(token)) {
+            String tokenId = jwtService.extractTokenId(token);
+            String email = jwtService.getUsernameFromToken(token);
+
+            if (Objects.nonNull(tokenId)) {
+                refreshTokenService.revoke(email, tokenId);
+                log.info("User logged out successfully: {}", email);
+            }
+        }
     }
 
 

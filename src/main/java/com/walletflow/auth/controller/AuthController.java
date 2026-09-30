@@ -1,7 +1,10 @@
 package com.walletflow.auth.controller;
 
 import com.walletflow.auth.controller.api.AuthApi;
+import com.walletflow.auth.dto.request.LoginRequest;
 import com.walletflow.auth.dto.request.RegisterRequest;
+import com.walletflow.auth.dto.response.LoginResponse;
+import com.walletflow.auth.refreshtoken.dto.RefreshTokenRequest;
 import com.walletflow.auth.service.AuthService;
 import com.walletflow.auth.verificationtoken.dto.request.PasswordRequest;
 import com.walletflow.auth.verificationtoken.service.VerificationTokenService;
@@ -36,8 +39,20 @@ public class AuthController extends BaseController implements AuthApi {
         return ok();
     }
 
-//
-//    public ResponseEntity<ApiStandardResponse<LoginResponse>> login(LoginRequest loginRequest) {
-//        authService.login(loginRequest);
-//        return ok();
+    @Override
+    public ResponseEntity<ApiStandardResponse<LoginResponse>> login(LoginRequest loginRequest) {
+        return ok(authService.login(loginRequest));
     }
+
+    @Override
+    public ResponseEntity<ApiStandardResponse<LoginResponse>> refresh(RefreshTokenRequest refreshTokenRequest) {
+        return ok(authService.refreshToken(refreshTokenRequest));
+    }
+
+    @Override
+    public ResponseEntity<ApiStandardResponse<Void>> logout(RefreshTokenRequest refreshTokenRequest) {
+        authService.logout(refreshTokenRequest);
+        return ok();
+    }
+
+}
